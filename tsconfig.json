@@ -1,0 +1,15 @@
+{
+  "CompilerOptions": {
+    "target": "es6",
+    "module": "commonjs",
+    "outDir": "dist",
+    "rootDir": "src",
+    "lib": ["esnext"],
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "removeComments": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules"]
+}
