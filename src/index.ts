@@ -11,7 +11,6 @@ const io = new Server(server)
 
 interface User {
     name: string;
-    isConnected: boolean;
 }
 
 interface ListItem {
@@ -19,6 +18,7 @@ interface ListItem {
     priority: 1 | 2 | 3;
     quantity: number;
     done: boolean;
+    description: string;
     created: Date;
     updated: Date;
 }
@@ -30,12 +30,12 @@ interface Room {
 
 const userSchema = new Schema<User>({
     name: { type: String, required: true },
-    isConnected: { type: Boolean, default: false }
 })
 
 
 const listItemSchema = new Schema<ListItem>({
     name: { type: String, required: true },
+    description: { type: String, required: false },
     priority: { type: Number, required: true, default: 1, min: 1, max: 3 },
     quantity: { type: Number, default: 1 },
     done: { type: Boolean, default: false },
@@ -68,7 +68,6 @@ io.on('connection', async (socket) => {
                 room.save()
             }
             console.log(`Joining room ${room._id} as ${user.name}`)
-            user.isConnected = true
             await room.save()
             socket.join(roomId)
             io.to(roomId).emit("joinRoom", room)
@@ -80,10 +79,16 @@ io.on('connection', async (socket) => {
 
     socket.on('addItem', async (item: ListItem) => {
         try {
+            console.log('add Item', item.name)
             const addedItem = new ListItemModel(item)
             room.items.push(addedItem)
-            room.save()
-            io.to(roomId).emit('addItem', room.items)
+            room.save(err => {
+                if (err) {
+                    console.log(err)
+                    return err
+                }
+                io.to(roomId).emit('addItem', room.items)
+            })
         } catch (e) { console.error(e) }
     })
 
@@ -94,20 +99,26 @@ io.on('connection', async (socket) => {
             const item = room.items.find(i => i._id == itemId)
             item.done = !item.done
             item.updated = new Date(Date.now())
-            room.save()
-            io.to(roomId).emit('toggleItem', room.items)
+            room.save(err => {
+                if (err) console.log(err)
+                io.to(roomId).emit('toggleItem', room.items)
+            })
         } catch (e) { console.log(e) }
     })
 
     socket.on('deleteItem', async (itemId: string) => {
-        console.log('deleting item with id ', itemId)
-        // room.items.id(_id).remove();
-        // room.save()
-        // io.to(roomId).emit('deleteItem', room.items)
+        const item = room.items.id(itemId)
+        console.log('removing item', item.name)
+        if (item) {
+            item.remove
+            room.save(err => {
+                if (err) console.log(err)
+                io.to(roomId).emit('deleteItem', room.items)
+            })
+        }
     })
 
     socket.on('disconnect', async () => {
-        user.isConnected = false
         await room.save()
         console.log('user disconnected')
     })
