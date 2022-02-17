@@ -70,7 +70,7 @@ io.on('connection', async (socket) => {
             console.log(`Joining room ${room._id} as ${user.name}`)
             await room.save()
             socket.join(roomId)
-            io.to(roomId).emit("joinRoom", room)
+            io.to(roomId).emit("joinRoom", room.items)
         }
     } catch (e) {
         console.error(e)
@@ -110,7 +110,7 @@ io.on('connection', async (socket) => {
         const item = room.items.id(itemId)
         console.log('removing item', item.name)
         if (item) {
-            item.remove
+            item.remove()
             room.save(err => {
                 if (err) console.log(err)
                 io.to(roomId).emit('deleteItem', room.items)
